@@ -330,8 +330,8 @@
     .family-grid {
       display: grid;
       grid-template-columns: 320px 1fr;
-      grid-template-areas: "side dishes" "foot dishes";
-      grid-template-rows: auto 1fr;
+      grid-template-areas: "side dishes" "foot dishes" "foot loc";
+      grid-template-rows: auto 1fr auto;
       column-gap: 32px;
       align-items: start;
     }
@@ -340,6 +340,8 @@
     .family-foot { display: block; grid-area: foot; position: sticky; top: 16px; }
     .family-dishes { grid-area: dishes; }
     .event-info .flake-rule { margin: 26px 0 18px; }
+    .family-loc { grid-area: loc; }
+    .schedule { margin-bottom: 0; }
     .map { height: 240px; }
     .family-foot .tally { position: static; margin: 12px 0 0; flex-direction: column; align-items: stretch; }
     .family-foot .tally .btn { width: 100%; }
@@ -438,8 +440,19 @@
               <dt>3pm</dt><dd>Dinner, Trivia to Follow</dd>
               <dt>~5:30pm</dt><dd>Gift Exchange</dd>
             </dl>
+          </section>
+         </div>
 
-            <h3>Location</h3>
+         <div class="family-foot">
+          <div class="tally" id="tally" aria-live="polite">
+            <span id="tallyText">Enter the number attending.</span>
+            <button type="submit" class="btn primary" id="submitBtn" disabled>Submit</button>
+          </div>
+         </div>
+
+          <section class="event-info family-loc" aria-labelledby="locHead">
+            <hr class="flake-rule">
+            <h3 id="locHead">Location</h3>
             <address class="venue">
               <strong>Sapona Golf and Tennis Club</strong><br>
               439 Beaver Creek Rd, Lexington, NC 27295
@@ -451,14 +464,6 @@
               <span class="map-cta">📍 Open in Google Maps · Directions</span>
             </a>
           </section>
-         </div>
-
-         <div class="family-foot">
-          <div class="tally" id="tally" aria-live="polite">
-            <span id="tallyText">Enter the number attending.</span>
-            <button type="submit" class="btn primary" id="submitBtn" disabled>Submit</button>
-          </div>
-         </div>
         </form>
       </section>
 
