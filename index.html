@@ -247,6 +247,10 @@
   .orders td input {
     width: 58px; min-height: 36px; padding: 4px; text-align: center; font-size: 16px; border-radius: 4px;
   }
+  .orders tr.new-row td { background: #FFF8DC; }
+  .orders tr.new-row td:first-child input { width: 100%; min-width: 120px; text-align: left; }
+  .orders .new-actions { white-space: nowrap; }
+  .orders .small-btn { padding: 6px 12px; min-height: 36px; font-size: 14px; margin: 2px; }
   .orders tr.mismatch td { background: var(--bad); }
   .orders tr.mismatch td:first-child { background: var(--bad); color: var(--bad-ink); }
   .orders tr.dirty td:first-child::after { content: " •"; color: var(--sky); }
@@ -524,6 +528,7 @@
           <table class="grid orders" id="ordersTable"></table>
         </div>
         <div class="toolbar">
+          <button type="button" class="btn" id="addRowBtn">+ Add family</button>
           <button type="button" class="btn primary" id="saveRowsBtn" disabled>Save changes</button>
           <span class="muted" id="dirtyNote"></span>
         </div>
@@ -874,10 +879,49 @@ window.ART = {
     updateDirty();
   }
 
+  // ----- add a family (new editable row at the bottom of the table) -----
+  function newRowValues(tr) {
+    const counts = {};
+    tr.querySelectorAll('input[data-k]').forEach(inp => {
+      if (inp.dataset.k !== 'attending') counts[inp.dataset.k] = toInt(inp.value);
+    });
+    return { familyName: tr.querySelector('[data-name]').value, attending: toInt(tr.querySelector('[data-k="attending"]').value), counts: counts };
+  }
+
+  $('addRowBtn').addEventListener('click', () => {
+    const table = $('ordersTable');
+    let tr = table.querySelector('tr.new-row');
+    if (!tr) {
+      const empty = table.querySelector('td[colspan]');
+      if (empty) empty.parentNode.remove();
+      const d = state.admin;
+      tr = document.createElement('tr');
+      tr.className = 'new-row';
+      tr.innerHTML =
+        '<td><input type="text" data-name maxlength="80" placeholder="Family name" aria-label="New family name"></td>' +
+        '<td><input type="number" inputmode="numeric" min="0" data-k="attending" value="0" aria-label="Attending for new family"></td>' +
+        d.dishes.map(x => '<td><input type="number" inputmode="numeric" min="0" data-k="' + esc(x.name) + '" value="0" aria-label="' +
+          esc(x.name) + ' for new family"></td>').join('') +
+        '<td class="num" data-total>0</td><td></td>' +
+        '<td class="new-actions"><button type="button" class="btn primary small-btn" data-add>Add</button>' +
+        '<button type="button" class="btn small-btn" data-cancel>Cancel</button></td>';
+      table.appendChild(tr);
+    }
+    tr.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    tr.querySelector('[data-name]').focus();
+  });
+
   $('ordersTable').addEventListener('input', e => {
     const input = e.target;
     if (input.tagName !== 'INPUT') return;
     const tr = input.closest('tr');
+    if (tr.classList.contains('new-row')) {
+      const v = newRowValues(tr);
+      const total = Object.keys(v.counts).reduce((s, k) => s + v.counts[k], 0);
+      tr.querySelector('[data-total]').textContent = total;
+      tr.classList.toggle('mismatch', total !== v.attending);
+      return;
+    }
     const i = Number(tr.dataset.i);
     const row = state.admin.rows[i];
     const edit = state.dirty[i] || (state.dirty[i] = { name: row.name, attending: row.attending, counts: Object.assign({}, row.counts) });
@@ -907,6 +951,36 @@ window.ART = {
   });
 
   $('ordersTable').addEventListener('click', e => {
+    const cancel = e.target.closest('[data-cancel]');
+    if (cancel) {
+      cancel.closest('tr').remove();
+      if (!state.admin.rows.length) renderAdmin();
+      return;
+    }
+    const add = e.target.closest('[data-add]');
+    if (add) {
+      const tr = add.closest('tr');
+      const v = newRowValues(tr);
+      if (!v.familyName.trim()) { flash('Enter a family name for the new row.', 'error'); tr.querySelector('[data-name]').focus(); return; }
+      if (!v.attending && !window.confirm('Add "' + v.familyName.trim() + '" with 0 attending?')) return;
+      busy(add, true, 'Adding…');
+      call('addFamily', state.token, v)
+        .then(res => {
+          const kept = Object.keys(state.dirty).length;
+          const msg = 'Added ' + res.added + '.' + (res.mismatch ? ' Attending doesn\'t match dinners yet, so the row is highlighted.' : '');
+          if (kept) {
+            // Don't throw away unsaved edits elsewhere in the table: just turn the new row into a saved one.
+            tr.classList.remove('new-row');
+            tr.querySelectorAll('input').forEach(i => { i.disabled = true; });
+            tr.querySelector('.new-actions').innerHTML = '<span class="muted small">Saved, refresh to edit</span>';
+            flash(msg, 'success');
+          } else {
+            return loadAdmin().then(() => flash(msg, 'success'));
+          }
+        })
+        .catch(err => { busy(add, false); fail(err); });
+      return;
+    }
     const btn = e.target.closest('[data-del]');
     if (!btn) return;
     const row = state.admin.rows[Number(btn.dataset.del)];
