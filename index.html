@@ -944,6 +944,11 @@ window.ART = {
       : s.active
         ? '<span class="status-on">On</span> — sent daily around ' + s.hour + ' AM Eastern through ' + esc(s.endDate) + '.' + last
         : '<span class="status-off">Off</span> — add a recipient and press Save to turn it on.' + last;
+    $('reportStatus').innerHTML += '<br>Venue order PDF: ' + (s.pdfSent
+      ? 'emailed ' + esc(s.pdfSent) + '.'
+      : s.pdfScheduled
+        ? 'will be emailed to these recipients on ' + esc(s.pdfSendAt) + ' Eastern.'
+        : 'scheduled for ' + esc(s.pdfSendAt) + ' Eastern. Press Save recipients to confirm the schedule.');
   }
   function loadReport() {
     return call('getReportSettings', state.token).then(renderReport).catch(err => {
