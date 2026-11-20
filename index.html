@@ -344,8 +344,8 @@
     .family-grid {
       display: grid;
       grid-template-columns: 320px 1fr;
-      grid-template-areas: "side dishes" "foot dishes" "foot loc";
-      grid-template-rows: auto 1fr auto;
+      grid-template-areas: "side dishes" "foot dishes" "foot sched" "foot loc";
+      grid-template-rows: auto 1fr auto auto;
       column-gap: 32px;
       align-items: start;
     }
@@ -354,6 +354,7 @@
     .family-foot { display: block; grid-area: foot; position: sticky; top: 16px; }
     .family-dishes { grid-area: dishes; }
     .event-info .flake-rule { margin: 26px 0 18px; }
+    .family-sched { grid-area: sched; }
     .family-loc { grid-area: loc; }
     .schedule { margin-bottom: 0; }
     .map { height: 240px; }
@@ -445,16 +446,6 @@
           <p class="included" id="included">
             All dinners served with chef's choice dessert, a dinner roll &amp; complimentary sweet/unsweet tea.
           </p>
-
-          <section class="event-info" aria-labelledby="schedHead">
-            <hr class="flake-rule">
-            <h3 id="schedHead">Schedule</h3>
-            <dl class="schedule">
-              <dt>1pm</dt><dd>Golf Simulator</dd>
-              <dt>3pm</dt><dd>Dinner, Trivia to Follow</dd>
-              <dt>~5:30pm</dt><dd>Gift Exchange</dd>
-            </dl>
-          </section>
          </div>
 
          <div class="family-foot">
@@ -463,6 +454,16 @@
             <button type="submit" class="btn primary" id="submitBtn" disabled>Submit</button>
           </div>
          </div>
+
+          <section class="event-info family-sched" aria-labelledby="schedHead">
+            <hr class="flake-rule">
+            <h3 id="schedHead">Schedule</h3>
+            <dl class="schedule">
+              <dt>1pm</dt><dd>Golf Simulator</dd>
+              <dt>3pm</dt><dd>Dinner, Trivia to Follow</dd>
+              <dt>~5:30pm</dt><dd>Gift Exchange</dd>
+            </dl>
+          </section>
 
           <section class="event-info family-loc" aria-labelledby="locHead">
             <hr class="flake-rule">
