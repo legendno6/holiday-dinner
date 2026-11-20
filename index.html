@@ -244,6 +244,30 @@
   .panel summary { font: 800 18px var(--title); padding: 12px 0; cursor: pointer; }
   .panel form { padding-bottom: 14px; }
 
+  /* Schedule + location (below the menu) */
+  .event-info h3 { font: 800 clamp(22px, 5vw, 26px)/1.2 var(--title); margin: 0 0 8px; }
+  .event-info h3 + .venue { margin-top: 0; }
+  .schedule {
+    display: grid; grid-template-columns: max-content 1fr; column-gap: 16px; row-gap: 8px;
+    margin: 0 0 22px; font: 700 15px/1.4 var(--body);
+  }
+  .schedule dt { font: 15px/1.4 var(--heavy); color: var(--ink); }
+  .schedule dd { margin: 0; }
+  .venue { font: 700 15px/1.5 var(--body); font-style: normal; margin: 0 0 12px; }
+  .venue strong { font: 15px/1.5 var(--heavy); }
+  .map-card {
+    display: block; position: relative; overflow: hidden;
+    border: 1.5px solid var(--navy); border-radius: 12px; background: #fff;
+    color: var(--ink); text-decoration: none;
+    box-shadow: 0 2px 8px rgba(37, 51, 86, .15);
+  }
+  .map { display: block; width: 100%; height: 200px; border: 0; pointer-events: none; }
+  .map-cta {
+    display: block; padding: 10px 12px; font: 700 15px var(--body);
+    border-top: 1.5px solid var(--navy); color: var(--navy); text-decoration: underline;
+  }
+  @media (hover: hover) { .map-card:hover { box-shadow: 0 4px 14px rgba(37, 51, 86, .3); } }
+
   /* Family form wrappers: invisible on phones (so the tally bar stays sticky against the whole form). */
   .family-side, .family-foot { display: contents; }
 
@@ -311,6 +335,8 @@
     .family-side .flake-rule { display: none; }
     .family-foot { display: block; grid-area: foot; position: sticky; top: 16px; }
     .family-dishes { grid-area: dishes; }
+    .event-info .flake-rule { margin: 26px 0 18px; }
+    .map { height: 240px; }
     .family-foot .tally { position: static; margin: 12px 0 0; flex-direction: column; align-items: stretch; }
     .family-foot .tally .btn { width: 100%; }
     .family-foot #tallyText { flex: none; }
@@ -394,13 +420,36 @@
           <hr class="flake-rule">
          </div>
 
-         <ol class="dishes family-dishes" id="dishList"></ol>
-
-         <div class="family-foot">
+         <div class="family-dishes">
+          <ol class="dishes" id="dishList"></ol>
           <p class="included" id="included">
             All dinners served with chef's choice dessert, a dinner roll &amp; complimentary sweet/unsweet tea.
           </p>
 
+          <section class="event-info" aria-labelledby="schedHead">
+            <hr class="flake-rule">
+            <h3 id="schedHead">Schedule</h3>
+            <dl class="schedule">
+              <dt>1pm</dt><dd>Golf Simulator</dd>
+              <dt>3pm</dt><dd>Dinner, Trivia to Follow</dd>
+              <dt>~5:30pm</dt><dd>Gift Exchange</dd>
+            </dl>
+
+            <h3>Location</h3>
+            <address class="venue">
+              <strong>Sapona Golf and Tennis Club</strong><br>
+              439 Beaver Creek Rd, Lexington, NC 27295
+            </address>
+            <a class="map-card" href="https://www.google.com/maps/search/?api=1&amp;query=Sapona+Golf+and+Tennis+Club%2C+439+Beaver+Creek+Rd%2C+Lexington%2C+NC+27295"
+               target="_blank" rel="noopener" aria-label="Open Sapona Golf and Tennis Club in Google Maps">
+              <iframe class="map" title="Map of Sapona Golf and Tennis Club" loading="lazy" referrerpolicy="no-referrer-when-downgrade" tabindex="-1"
+                src="https://maps.google.com/maps?q=Sapona+Golf+and+Tennis+Club%2C+439+Beaver+Creek+Rd%2C+Lexington%2C+NC+27295&amp;z=14&amp;output=embed"></iframe>
+              <span class="map-cta">📍 Open in Google Maps · Directions</span>
+            </a>
+          </section>
+         </div>
+
+         <div class="family-foot">
           <div class="tally" id="tally" aria-live="polite">
             <span id="tallyText">Enter the number attending.</span>
             <button type="submit" class="btn primary" id="submitBtn" disabled>Submit</button>
