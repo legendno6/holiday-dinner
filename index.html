@@ -68,7 +68,7 @@
       radial-gradient(circle at 46% 77%, #fff 0 3px, transparent 4px),
       radial-gradient(circle at 92% 84%, #fff 0 3px, transparent 4px),
       linear-gradient(180deg, var(--win-top), var(--win-bottom));
-    padding: 78px 18px 0;
+    padding: 114px 18px 0; /* phones: the title starts below the corner snowflakes */
     min-height: calc(100vh - 48px);
     overflow: hidden;
     overflow: clip; /* clips the corner art without breaking position: sticky (older browsers fall back to hidden) */
@@ -83,7 +83,7 @@
   .art-snowman { left: 4px; bottom: 6px; width: clamp(78px, 20vw, 120px); }
   .art-br { right: -4px; bottom: -4px; width: clamp(96px, 26vw, 170px); }
 
-  .masthead { position: relative; padding-left: clamp(76px, 22vw, 150px); min-height: 40px; }
+  .masthead { position: relative; min-height: 40px; text-align: center; }
   h1 {
     font: italic 800 clamp(24px, 6.2vw, 38px)/1.15 var(--title);
     margin: 0;
@@ -91,7 +91,7 @@
     color: var(--ink);
   }
   .sub { margin: 2px 0 0; font: 700 15px var(--title); color: var(--navy); }
-  .signout { position: absolute; top: -60px; right: -6px; }
+  .signout { position: absolute; top: -102px; right: -6px; }
   h2 { font: 800 clamp(24px, 5.6vw, 30px)/1.2 var(--title); margin: 22px 0 6px; }
   h3 { font: 800 19px/1.2 var(--title); margin: 26px 0 8px; }
   .lead { margin: 0 0 16px; }
@@ -303,6 +303,9 @@
     body { padding: 24px; }
     .frame { padding: 18px; }
     .window { padding: 96px 36px 0; }
+    /* wider screens: title sits between the snowflakes, with equal room on both sides so it's truly centered */
+    .masthead { padding: 0 150px; }
+    .signout { top: -84px; }
     .foot { margin-left: -36px; margin-right: -36px; flex-basis: 170px; }
   }
 
@@ -314,7 +317,7 @@
     .foot { margin-left: -56px; margin-right: -56px; flex-basis: 200px; }
     .art-tl, .art-br { width: 210px; }
     .art-snowman { width: 150px; }
-    .masthead { padding-left: 190px; }
+    .masthead { padding: 0 190px; }
     h1 { font-size: 44px; }
     .signout { top: -90px; }
 
