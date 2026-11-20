@@ -480,6 +480,7 @@
         <div class="toolbar">
           <button type="button" class="btn" id="refreshBtn">↻ Refresh</button>
           <a class="btn" id="sheetLink" href="#" target="_blank" rel="noopener">Open the Sheet</a>
+          <button type="button" class="btn" id="pdfBtn">⬇ Venue order PDF</button>
           <span class="muted" id="refreshedAt"></span>
         </div>
 
@@ -899,6 +900,36 @@ window.ART = {
   $('refreshBtn').addEventListener('click', () => {
     if (Object.keys(state.dirty).length && !window.confirm('Discard unsaved changes and reload from the Sheet?')) return;
     loadAdmin().catch(fail);
+  });
+
+  // ---------- venue order PDF ----------
+  $('pdfBtn').addEventListener('click', () => {
+    const d = state.admin;
+    const bad = d ? d.rows.filter(r => r.mismatch).length : 0;
+    if (bad && !window.confirm(plural(bad, "family's totals don't", "families' totals don't") +
+      ' match (attending vs. dinners). Download the PDF anyway?')) return;
+    // iPhone/iPad: open a tab now (inside the tap) so it isn't blocked as a pop-up, then show the PDF in it.
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const win = ios ? window.open('', '_blank') : null;
+    busy($('pdfBtn'), true, 'Building PDF…');
+    call('venueOrderPdf', state.token).then(res => {
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      if (win) {
+        win.location.href = url;
+      } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = res.filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      flash('Downloaded ' + res.filename + '.', 'success');
+    }).catch(err => { if (win) win.close(); fail(err); }).finally(() => busy($('pdfBtn'), false));
   });
 
   // ---------- daily email report ----------
