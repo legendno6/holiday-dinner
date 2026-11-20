@@ -108,7 +108,10 @@
   /* Form controls */
   .field { display: block; margin: 0 0 14px; }
   .field > span { display: block; font-weight: 700; margin-bottom: 4px; }
-  input[type=text], input[type=password], input[type=number] {
+  textarea { resize: vertical; line-height: 1.4; display: block; }
+  .status-on { color: var(--good-ink); font-weight: 700; }
+  .status-off { color: var(--muted); font-weight: 700; }
+  input[type=text], input[type=password], input[type=number], textarea {
     width: 100%;
     font: 17px var(--body);
     color: var(--ink);
@@ -451,6 +454,23 @@
           <span class="muted" id="dirtyNote"></span>
         </div>
 
+        <details class="panel" id="reportPanel">
+          <summary>Daily email report</summary>
+          <form id="reportForm" autocomplete="off" novalidate>
+            <p class="small" id="reportStatus">Loading…</p>
+            <label class="field">
+              <span>Send the current count to (one email address per line)</span>
+              <textarea id="reportRecipients" rows="3" spellcheck="false" autocapitalize="off" inputmode="email"
+                placeholder="you@example.com"></textarea>
+            </label>
+            <p class="muted small">Each person gets their own copy with totals, cost, and every family's order. Leave the box empty to turn the daily email off.</p>
+            <div class="toolbar">
+              <button type="submit" class="btn primary" id="reportSaveBtn">Save recipients</button>
+              <button type="button" class="btn" id="reportNowBtn">✉ Email now</button>
+            </div>
+          </form>
+        </details>
+
         <details class="panel" id="pwPanel">
           <summary>Change passwords</summary>
           <form id="pwForm" autocomplete="off">
@@ -732,6 +752,7 @@ window.ART = {
       state.dirty = {};
       renderAdmin();
       show('viewAdmin');
+      loadReport();
       $('refreshedAt').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
     }).finally(() => busy($('refreshBtn'), false));
   }
@@ -820,6 +841,47 @@ window.ART = {
   $('refreshBtn').addEventListener('click', () => {
     if (Object.keys(state.dirty).length && !window.confirm('Discard unsaved changes and reload from the Sheet?')) return;
     loadAdmin().catch(fail);
+  });
+
+  // ---------- daily email report ----------
+  let reportSaved = '';
+  function renderReport(s) {
+    const text = (s.recipients || []).join('\n');
+    reportSaved = text;
+    $('reportRecipients').value = text;
+    const last = s.lastSent ? ' Last sent ' + esc(s.lastSent) + '.' : '';
+    $('reportStatus').innerHTML = s.ended
+      ? '<span class="status-off">Ended</span> — daily emails stopped after ' + esc(s.endDate) + '.' + last
+      : s.active
+        ? '<span class="status-on">On</span> — sent daily around ' + s.hour + ' AM Eastern through ' + esc(s.endDate) + '.' + last
+        : '<span class="status-off">Off</span> — add a recipient and press Save to turn it on.' + last;
+  }
+  function loadReport() {
+    return call('getReportSettings', state.token).then(renderReport).catch(err => {
+      if (err.message === '__handled__') return;
+      $('reportStatus').textContent = 'Could not load email settings: ' + err.message;
+    });
+  }
+  function saveReport() {
+    return call('saveReportSettings', state.token, $('reportRecipients').value).then(s => { renderReport(s); return s; });
+  }
+
+  $('reportForm').addEventListener('submit', e => {
+    e.preventDefault();
+    busy($('reportSaveBtn'), true, 'Saving…');
+    saveReport().then(s => flash(s.recipients.length
+      ? 'Saved ' + plural(s.recipients.length, 'recipient') + '.' + (s.active ? ' Daily emails are on.' : '')
+      : 'Recipients cleared. Daily emails are off.', 'success'))
+      .catch(fail).finally(() => busy($('reportSaveBtn'), false));
+  });
+
+  $('reportNowBtn').addEventListener('click', () => {
+    busy($('reportNowBtn'), true, 'Sending…');
+    const pending = $('reportRecipients').value.trim() !== reportSaved.trim() ? saveReport() : Promise.resolve();
+    pending.then(() => call('sendReportNow', state.token)).then(res => {
+      renderReport(res.status);
+      flash('Sent the current count to ' + plural(res.sent, 'recipient') + '.', 'success');
+    }).catch(fail).finally(() => busy($('reportNowBtn'), false));
   });
 
   $('pwForm').addEventListener('submit', e => {
