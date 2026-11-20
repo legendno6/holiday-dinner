@@ -96,6 +96,20 @@
     color: var(--ink);
     white-space: nowrap; /* keep the date on one line; on tablets it may extend past the title's side padding */
   }
+  /* Registration closed (after CLOSE_AT): body gets .is-closed */
+  body:not(.is-closed) .closed-only { display: none !important; }
+  body.is-closed .open-only { display: none !important; }
+  body.is-closed[data-view="viewLogin"] #subtitle { display: none; }
+  body.is-closed #loginForm:not(.host-open) { display: none; }
+  .closed-banner {
+    /* one line, centered on the page even where the title's side padding is narrower than the banner */
+    display: block; width: max-content; white-space: nowrap;
+    margin: 14px 0 0 50%; transform: translateX(-50%);
+    font: 800 clamp(24px, 6vw, 34px)/1.2 var(--title); color: var(--navy);
+    padding: 8px 18px; border: 1.5px solid var(--navy); border-radius: 10px; background: rgba(255, 255, 255, .85);
+  }
+  #closedInfo .flake-rule { margin-top: 22px; }
+  .host-link { display: block; margin: 18px auto 10px; }
   .sub { margin: 2px 0 0; font: 700 15px var(--title); color: var(--navy); }
   .signout { position: absolute; top: -102px; right: -6px; }
   h2 { font: 800 clamp(24px, 5.6vw, 30px)/1.2 var(--title); margin: 22px 0 6px; }
@@ -407,6 +421,7 @@
       <header class="masthead">
         <h1>McCarson Holiday Dinner 2026</h1>
         <p class="event-date"><time datetime="2026-12-13">Sunday, December 13, 2026</time></p>
+        <p class="closed-banner closed-only">Registrations Closed</p>
         <p class="sub" id="subtitle">Dinner sign-up</p>
         <button type="button" class="link-btn signout" id="signOut" hidden>Sign out</button>
       </header>
@@ -415,10 +430,15 @@
 
       <!-- LOGIN -->
       <section id="viewLogin" class="view">
-        <h2>Welcome!</h2>
-        <p class="lead">Sign in with the password shared with you.</p>
+        <div class="open-only">
+          <h2>Welcome!</h2>
+          <p class="lead">Sign in with the password shared with you.</p>
+        </div>
+        <!-- After the close: the location + map (copied from the family form by Client.html) and a small Host sign-in link -->
+        <div class="closed-only" id="closedInfo"></div>
+        <button type="button" class="link-btn closed-only host-link" id="hostToggle" aria-expanded="false" aria-controls="loginForm">Host sign in</button>
         <form id="loginForm" autocomplete="off">
-          <div class="seg" role="radiogroup" aria-label="Sign in as">
+          <div class="seg open-only" role="radiogroup" aria-label="Sign in as">
             <label><input type="radio" name="role" value="family" checked><span>Family</span></label>
             <label><input type="radio" name="role" value="admin"><span>Host</span></label>
           </div>
@@ -608,6 +628,13 @@ window.ART = {
   const state = { token: null, role: null, menu: [], admin: null, dirty: {} };
   const TOKEN_KEY = 'hd2026.session';
 
+  // Family sign-ups close at dinner time (keep in sync with CLOSE_AT in Code.gs, which is the real lock).
+  // CLOSE_AT_OVERRIDE is only set by the local preview (tools/build_preview.py) to show the closed screen.
+  const CLOSE_AT = typeof window.CLOSE_AT_OVERRIDE === 'number'
+    ? window.CLOSE_AT_OVERRIDE : Date.parse('2026-12-13T15:00:00-05:00'); // Sun Dec 13, 2026, 3:00 PM Eastern
+  let serverSaysClosed = false;
+  function isClosed() { return serverSaysClosed || Date.now() >= CLOSE_AT; }
+
   // ---------- helpers ----------
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -658,6 +685,13 @@ window.ART = {
       const msg = (err && err.message) || String(err);
       if (msg.indexOf('SESSION_EXPIRED') >= 0) {
         signOut(msg.replace(/^.*SESSION_EXPIRED:\s*/, ''));
+        throw new Error('__handled__');
+      }
+      if (msg.indexOf('REGISTRATION_CLOSED') >= 0) {
+        serverSaysClosed = true;
+        if (state.role === 'admin') throw new Error('Registrations are closed.'); // host keeps working
+        signOut();
+        applyClosed();
         throw new Error('__handled__');
       }
       throw new Error(msg.replace(/^(Exception|Error):\s*/, ''));
@@ -712,10 +746,39 @@ window.ART = {
     }
   });
 
+  // ---------- registration closed ----------
+  /** Switches the page to its closed state: "Registrations Closed", location + map, and a small Host sign-in link. */
+  function applyClosed() {
+    if (!isClosed()) return;
+    document.body.classList.add('is-closed');
+    const info = $('closedInfo');
+    if (!info.firstChild) {
+      const loc = document.querySelector('.family-loc');
+      if (loc) {
+        const copy = loc.cloneNode(true);
+        copy.classList.remove('family-loc');
+        copy.removeAttribute('aria-labelledby');
+        copy.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        info.appendChild(copy);
+      }
+    }
+    document.querySelector('input[name=role][value=admin]').checked = true;
+    // A family member who is still signed in is signed out (their session no longer works on the server either).
+    if (state.role === 'family') { signOut(); }
+  }
+  $('hostToggle').addEventListener('click', () => {
+    const form = $('loginForm');
+    const open = form.classList.toggle('host-open');
+    $('hostToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) $('loginPw').focus();
+  });
+  // Re-check every 30 seconds so an open page switches over at 3:00 PM by itself.
+  setInterval(() => { if (isClosed() && !document.body.classList.contains('is-closed')) applyClosed(); }, 30000);
+
   // ---------- login ----------
   $('loginForm').addEventListener('submit', e => {
     e.preventDefault();
-    const role = document.querySelector('input[name=role]:checked').value;
+    const role = isClosed() ? 'admin' : document.querySelector('input[name=role]:checked').value;
     const pw = $('loginPw').value;
     if (!pw) return;
     flash('');
@@ -1117,7 +1180,9 @@ window.ART = {
   $('artBR').src = window.ART.flakesBR;
   $('artSnowman').src = window.ART.snowman;
 
-  const saved = restore();
+  let saved = restore();
+  if (saved && saved.role === 'family' && isClosed()) { store(null); saved = null; } // family sessions end at the close
+  applyClosed();
   if (saved && saved.token) {
     state.token = saved.token;
     state.role = saved.role;
