@@ -90,6 +90,12 @@
     text-wrap: balance;
     color: var(--ink);
   }
+  .event-date {
+    margin: 4px 0 0;
+    font: italic 700 clamp(17px, 4.4vw, 24px)/1.25 var(--title);
+    color: var(--ink);
+    white-space: nowrap; /* keep the date on one line; on tablets it may extend past the title's side padding */
+  }
   .sub { margin: 2px 0 0; font: 700 15px var(--title); color: var(--navy); }
   .signout { position: absolute; top: -102px; right: -6px; }
   h2 { font: 800 clamp(24px, 5.6vw, 30px)/1.2 var(--title); margin: 22px 0 6px; }
@@ -323,6 +329,7 @@
     .window { padding: 96px 36px 0; }
     /* wider screens: title sits between the snowflakes, with equal room on both sides so it's truly centered */
     .masthead { padding: 0 150px; }
+    .event-date { margin-left: -150px; margin-right: -150px; } /* full width below the title, still centered */
     .signout { top: -84px; }
     .foot { margin-left: -36px; margin-right: -36px; flex-basis: 170px; }
   }
@@ -336,6 +343,7 @@
     .art-tl, .art-br { width: 210px; }
     .art-snowman { width: 150px; }
     .masthead { padding: 0 190px; }
+    .event-date { margin-left: -190px; margin-right: -190px; }
     h1 { font-size: 44px; }
     .signout { top: -90px; }
 
@@ -398,6 +406,7 @@
 
       <header class="masthead">
         <h1>McCarson Holiday Dinner 2026</h1>
+        <p class="event-date"><time datetime="2026-12-13">Sunday, December 13, 2026</time></p>
         <p class="sub" id="subtitle">Dinner sign-up</p>
         <button type="button" class="link-btn signout" id="signOut" hidden>Sign out</button>
       </header>
