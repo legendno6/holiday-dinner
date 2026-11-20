@@ -110,6 +110,20 @@
   .field { display: block; margin: 0 0 14px; }
   .field > span { display: block; font-weight: 700; margin-bottom: 4px; }
   textarea { resize: vertical; line-height: 1.4; display: block; }
+  .switch-row { display: flex; align-items: center; gap: 12px; margin: 4px 0 10px; cursor: pointer; min-height: 44px; }
+  .switch-row input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .switch {
+    flex: 0 0 auto; position: relative; width: 50px; height: 28px; border-radius: 999px;
+    background: #A9B4DA; border: 1.5px solid var(--navy); transition: background .15s;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; border-radius: 50%;
+    background: #fff; border: 1.5px solid var(--navy); transition: transform .15s;
+  }
+  .switch-row input:checked + .switch { background: var(--navy); }
+  .switch-row input:checked + .switch::after { transform: translateX(22px); }
+  .switch-row input:focus-visible + .switch { outline: 3px solid var(--sky); outline-offset: 2px; }
+  .switch-row input:disabled + .switch { opacity: .5; }
   .status-on { color: var(--good-ink); font-weight: 700; }
   .status-off { color: var(--muted); font-weight: 700; }
   input[type=text], input[type=password], input[type=number], textarea {
@@ -516,6 +530,11 @@
         <details class="panel" id="reportPanel">
           <summary>Daily email report</summary>
           <form id="reportForm" autocomplete="off" novalidate>
+            <label class="switch-row">
+              <input type="checkbox" id="dailyToggle" role="switch" checked>
+              <span class="switch" aria-hidden="true"></span>
+              <span><strong>Send the daily email</strong> <span class="muted small">(around 7 AM Eastern)</span></span>
+            </label>
             <p class="small" id="reportStatus">Loading…</p>
             <label class="field">
               <span>Send the current count to (one email address per line)</span>
@@ -938,12 +957,17 @@ window.ART = {
     const text = (s.recipients || []).join('\n');
     reportSaved = text;
     $('reportRecipients').value = text;
+    const toggle = $('dailyToggle');
+    toggle.checked = s.dailyEnabled !== false;
+    toggle.disabled = !!s.ended;
     const last = s.lastSent ? ' Last sent ' + esc(s.lastSent) + '.' : '';
     $('reportStatus').innerHTML = s.ended
       ? '<span class="status-off">Ended</span> — daily emails stopped after ' + esc(s.endDate) + '.' + last
-      : s.active
-        ? '<span class="status-on">On</span> — sent daily around ' + s.hour + ' AM Eastern through ' + esc(s.endDate) + '.' + last
-        : '<span class="status-off">Off</span> — add a recipient and press Save to turn it on.' + last;
+      : s.dailyEnabled === false
+        ? '<span class="status-off">Off</span> — daily email turned off. Recipients are kept; flip the switch to resume.' + last
+        : s.active
+          ? '<span class="status-on">On</span> — sent daily around ' + s.hour + ' AM Eastern through ' + esc(s.endDate) + '.' + last
+          : '<span class="status-off">Off</span> — add a recipient and press Save to turn it on.' + last;
     $('reportStatus').innerHTML += '<br>Venue order PDF: ' + (s.pdfSent
       ? 'emailed ' + esc(s.pdfSent) + '.'
       : s.pdfScheduled
@@ -956,6 +980,15 @@ window.ART = {
       $('reportStatus').textContent = 'Could not load email settings: ' + err.message;
     });
   }
+  $('dailyToggle').addEventListener('change', e => {
+    const on = e.target.checked;
+    e.target.disabled = true;
+    call('setDailyEnabled', state.token, on).then(s => {
+      renderReport(s);
+      flash(on ? 'Daily email turned on.' : 'Daily email turned off. The Dec 12 PDF email and Email now still work.', 'success');
+    }).catch(err => { e.target.checked = !on; fail(err); }).finally(() => { e.target.disabled = false; });
+  });
+
   function saveReport() {
     return call('saveReportSettings', state.token, $('reportRecipients').value).then(s => { renderReport(s); return s; });
   }
