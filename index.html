@@ -677,7 +677,7 @@ window.ART = {
   // Family sign-ups close at dinner time (keep in sync with CLOSE_AT in Code.gs, which is the real lock).
   // CLOSE_AT_OVERRIDE is only set by the local preview (tools/build_preview.py) to show the closed screen.
   const CLOSE_AT = typeof window.CLOSE_AT_OVERRIDE === 'number'
-    ? window.CLOSE_AT_OVERRIDE : Date.parse('2026-12-13T15:00:00-05:00'); // Sun Dec 13, 2026, 3:00 PM Eastern
+    ? window.CLOSE_AT_OVERRIDE : Date.parse('2026-12-13T13:15:00-05:00'); // Sun Dec 13, 2026, 1:15 PM Eastern
   let serverSaysClosed = false;
   function isClosed() { return serverSaysClosed || isOver() || Date.now() >= CLOSE_AT; }
 
@@ -852,7 +852,7 @@ window.ART = {
     if (!countdownTimer) { tickCountdown(); countdownTimer = setInterval(tickCountdown, 1000); }
   }
 
-  // Re-check every 30 seconds so an open page switches over at 3:00 PM (closed) and 6:00 PM (over) by itself.
+  // Re-check every 30 seconds so an open page switches over at 1:15 PM (closed) and 6:00 PM (over) by itself.
   setInterval(() => {
     if (isClosed() && !document.body.classList.contains('is-closed')) applyClosed();
     if (isOver() && !document.body.classList.contains('is-over')) applyOver();
