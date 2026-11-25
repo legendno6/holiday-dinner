@@ -109,6 +109,38 @@
     padding: 8px 18px; border: 1.5px solid var(--navy); border-radius: 10px; background: rgba(255, 255, 255, .85);
   }
   #closedInfo .flake-rule { margin-top: 22px; }
+
+  /* Party over (after OVER_AT): body gets .is-over (and .is-closed). Only the sign-in screen changes. */
+  body:not(.is-over) .over-only { display: none !important; }
+  body.is-over .not-over { display: none !important; }
+  body:not([data-view="viewLogin"]) .title-next { display: none !important; }
+  body.is-over[data-view="viewLogin"] .title-now,
+  body.is-over[data-view="viewLogin"] .event-date { display: none; }
+  body.is-over #viewLogin {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 55vh; text-align: center;
+    width: 100%; max-width: 640px; margin-left: auto; margin-right: auto;
+  }
+  body.is-over #viewLogin[hidden] { display: none; }
+  body.is-over #loginForm { width: 100%; max-width: 360px; text-align: left; }
+  .title-next { white-space: nowrap; }
+  body.is-over .host-link { margin-top: 28px; }
+  .over-box { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .over-msg {
+    margin: 0; text-align: center; text-wrap: balance;
+    font: italic 700 clamp(19px, 4.8vw, 26px)/1.3 var(--title); color: var(--ink);
+  }
+  .countdown {
+    display: flex; flex-wrap: nowrap; justify-content: center;
+    gap: clamp(4px, 1.6vw, 14px); margin: 16px 0;
+  }
+  .cd-unit {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: clamp(54px, 15vw, 104px); padding: 6px 3px 5px;
+    border: 1.5px solid var(--navy); border-radius: 10px; background: rgba(255, 255, 255, .85);
+  }
+  .cd-num { font: 800 clamp(24px, 7vw, 46px)/1.1 var(--title); color: var(--navy); font-variant-numeric: tabular-nums; }
+  .cd-lbl { font: 700 clamp(9px, 2.4vw, 14px)/1.2 var(--body); color: var(--ink); text-transform: uppercase; letter-spacing: .02em; }
   .host-link { display: block; margin: 18px auto 10px; }
   .sub { margin: 2px 0 0; font: 700 15px var(--title); color: var(--navy); }
   .signout { position: absolute; top: -102px; right: -6px; }
@@ -344,6 +376,7 @@
     .window { padding: 96px 36px 0; }
     /* wider screens: title sits between the snowflakes, with equal room on both sides so it's truly centered */
     .masthead { padding: 0 150px; }
+    body.is-over[data-view="viewLogin"] h1 { margin: 0 -150px; } /* one-line title may use the side padding */
     .event-date { margin-left: -150px; margin-right: -150px; } /* full width below the title, still centered */
     .signout { top: -84px; }
     .foot { margin-left: -36px; margin-right: -36px; flex-basis: 170px; }
@@ -358,6 +391,7 @@
     .art-tl, .art-br { width: 210px; }
     .art-snowman { width: 150px; }
     .masthead { padding: 0 190px; }
+    body.is-over[data-view="viewLogin"] h1 { margin: 0 -190px; }
     .event-date { margin-left: -190px; margin-right: -190px; }
     h1 { font-size: 44px; }
     .signout { top: -90px; }
@@ -420,9 +454,9 @@
       <img class="art art-tl" id="artTL" alt="" aria-hidden="true">
 
       <header class="masthead">
-        <h1>McCarson Holiday Dinner 2026</h1>
+        <h1><span class="title-now">McCarson Holiday Dinner 2026</span><span class="over-only title-next">Christmas Party 2027!</span></h1>
         <p class="event-date"><time datetime="2026-12-13">Sunday, December 13, 2026</time></p>
-        <p class="closed-banner closed-only">Registrations Closed</p>
+        <p class="closed-banner closed-only not-over">Registrations Closed</p>
         <p class="sub" id="subtitle">Dinner sign-up</p>
         <button type="button" class="link-btn signout" id="signOut" hidden>Sign out</button>
       </header>
@@ -436,7 +470,18 @@
           <p class="lead">Sign in with the password shared with you.</p>
         </div>
         <!-- After the close: the location + map (copied from the family form by Client.html) and a small Host sign-in link -->
-        <div class="closed-only" id="closedInfo"></div>
+        <div class="closed-only not-over" id="closedInfo"></div>
+        <!-- After the party (OVER_AT in Client.html): countdown to the next party -->
+        <div class="over-only over-box" aria-live="off">
+          <p class="over-msg">The 2026 Party is over, but there are about</p>
+          <div class="countdown" id="countdown" role="timer" aria-label="Time until the next party">
+            <div class="cd-unit"><span class="cd-num" id="cdDays">–</span><span class="cd-lbl" id="cdDaysLbl">days</span></div>
+            <div class="cd-unit"><span class="cd-num" id="cdHours">–</span><span class="cd-lbl" id="cdHoursLbl">hours</span></div>
+            <div class="cd-unit"><span class="cd-num" id="cdMins">–</span><span class="cd-lbl" id="cdMinsLbl">minutes</span></div>
+            <div class="cd-unit"><span class="cd-num" id="cdSecs">–</span><span class="cd-lbl" id="cdSecsLbl">seconds</span></div>
+          </div>
+          <p class="over-msg" id="overTail">until our next party!</p>
+        </div>
         <button type="button" class="link-btn closed-only host-link" id="hostToggle" aria-expanded="false" aria-controls="loginForm">Host sign in</button>
         <form id="loginForm" autocomplete="off">
           <div class="seg open-only" role="radiogroup" aria-label="Sign in as">
@@ -634,7 +679,15 @@ window.ART = {
   const CLOSE_AT = typeof window.CLOSE_AT_OVERRIDE === 'number'
     ? window.CLOSE_AT_OVERRIDE : Date.parse('2026-12-13T15:00:00-05:00'); // Sun Dec 13, 2026, 3:00 PM Eastern
   let serverSaysClosed = false;
-  function isClosed() { return serverSaysClosed || Date.now() >= CLOSE_AT; }
+  function isClosed() { return serverSaysClosed || isOver() || Date.now() >= CLOSE_AT; }
+
+  // After the party the sign-in screen becomes "Christmas Party 2027!" with a countdown to the next party.
+  // OVER_AT_OVERRIDE is only set by the local preview (preview.html?over).
+  const OVER_AT = typeof window.OVER_AT_OVERRIDE === 'number'
+    ? window.OVER_AT_OVERRIDE : Date.parse('2026-12-13T18:00:00-05:00'); // Sun Dec 13, 2026, 6:00 PM Eastern
+  const NEXT_AT = Date.parse('2027-12-17T13:00:00-05:00');              // Fri Dec 17, 2027, 1:00 PM Eastern
+  const NEXT_TITLE = 'Christmas Party 2027!';
+  function isOver() { return Date.now() >= OVER_AT; }
 
   // ---------- helpers ----------
   function esc(s) {
@@ -714,6 +767,7 @@ window.ART = {
     document.body.dataset.view = view; // lets the desktop CSS size the frame per view
     $('signOut').hidden = view === 'viewLogin';
     $('subtitle').textContent = view === 'viewAdmin' ? 'Organizer view' : 'Dinner sign-up';
+    if (isOver()) document.title = view === 'viewLogin' ? NEXT_TITLE : 'McCarson Holiday Dinner 2026';
   }
 
   function busy(btn, on, label) {
@@ -773,8 +827,36 @@ window.ART = {
     $('hostToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open) $('loginPw').focus();
   });
-  // Re-check every 30 seconds so an open page switches over at 3:00 PM by itself.
-  setInterval(() => { if (isClosed() && !document.body.classList.contains('is-closed')) applyClosed(); }, 30000);
+  // ---------- party over: countdown ----------
+  let countdownTimer = null;
+  function tickCountdown() {
+    const left = Math.max(0, Math.floor((NEXT_AT - Date.now()) / 1000));
+    const d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600), m = Math.floor(left % 3600 / 60), s = left % 60;
+    const pad = n => (n < 10 ? '0' : '') + n;
+    $('cdDays').textContent = d; $('cdDaysLbl').textContent = d === 1 ? 'day' : 'days';
+    $('cdHours').textContent = pad(h); $('cdHoursLbl').textContent = h === 1 ? 'hour' : 'hours';
+    $('cdMins').textContent = pad(m); $('cdMinsLbl').textContent = m === 1 ? 'minute' : 'minutes';
+    $('cdSecs').textContent = pad(s); $('cdSecsLbl').textContent = s === 1 ? 'second' : 'seconds';
+    if (left === 0) {
+      document.querySelector('.over-msg').textContent = "It's party time!";
+      $('countdown').hidden = true; $('overTail').hidden = true;
+      clearInterval(countdownTimer);
+    }
+  }
+  /** Switches the sign-in screen to the "party is over" countdown (and keeps family sign-in off). */
+  function applyOver() {
+    if (!isOver()) return;
+    applyClosed();
+    document.body.classList.add('is-over');
+    if (document.body.dataset.view === 'viewLogin' || !document.body.dataset.view) document.title = NEXT_TITLE;
+    if (!countdownTimer) { tickCountdown(); countdownTimer = setInterval(tickCountdown, 1000); }
+  }
+
+  // Re-check every 30 seconds so an open page switches over at 3:00 PM (closed) and 6:00 PM (over) by itself.
+  setInterval(() => {
+    if (isClosed() && !document.body.classList.contains('is-closed')) applyClosed();
+    if (isOver() && !document.body.classList.contains('is-over')) applyOver();
+  }, 30000);
 
   // ---------- login ----------
   $('loginForm').addEventListener('submit', e => {
@@ -1184,6 +1266,7 @@ window.ART = {
   let saved = restore();
   if (saved && saved.role === 'family' && isClosed()) { store(null); saved = null; } // family sessions end at the close
   applyClosed();
+  applyOver();
   if (saved && saved.token) {
     state.token = saved.token;
     state.role = saved.role;
